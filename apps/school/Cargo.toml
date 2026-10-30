@@ -1,0 +1,17 @@
+[package]
+name = "school"
+version.workspace = true
+edition.workspace = true
+description = "Zebra School - school administration desktop app"
+
+[dependencies]
+app-boot.workspace = true
+config.workspace = true
+storage.workspace = true
+ui-kit.workspace = true
+ui-shell.workspace = true
+serde.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

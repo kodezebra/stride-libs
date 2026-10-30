@@ -1,0 +1,66 @@
+# Zebra workspace root.
+#
+# This file is a *virtual* manifest: it has no [package] section, so the root
+# itself is not a crate. Members live in crates/ (libraries) and apps/
+# (binaries). The globs mean adding a crate never requires editing this file.
+
+[workspace]
+resolver = "3"
+members = ["crates/*", "apps/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+
+[workspace.dependencies]
+# ---- shared crates -------------------------------------------------------
+# Path dependencies, declared once here. Members consume them with
+# `name.workspace = true`, so an app never writes "../../crates/...".
+ui-kit = { path = "crates/ui-kit" }
+ui-shell = { path = "crates/ui-shell" }
+storage = { path = "crates/storage" }
+config = { path = "crates/config" }
+app-boot = { path = "crates/app-boot" }
+
+# ---- third-party ---------------------------------------------------------
+# Versions are pinned to what is already cached in ~/.cargo/registry, so a
+# clean build here needs no network. See docs/architecture.md ("Dependencies
+# and offline builds") before bumping any of these.
+anyhow = "1.0.104"
+thiserror = "2.0.21"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+clap = { version = "4.6.7", features = ["derive"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+directories = "6.0.0"
+rusqlite = { version = "0.32.1", features = ["bundled"] }
+# `default-features = false` on purpose: eframe's defaults switched from glow to
+# wgpu in 0.36, so relying on them would silently swap the rendering backend.
+# `accesskit` is also left off: egui-winit 0.36 needs accesskit 0.24, which is
+# not in the offline registry. Re-enable both together, with a deliberate fetch.
+eframe = { version = "0.36.2", default-features = false, features = [
+    "default_fonts",
+    "glow",
+    "links",
+    "wayland",
+    "x11",
+] }
+egui = "0.36.2"
+# SVG rendering for icon sets; `egui-lucide` bakes icon paths as SVG.
+egui_extras = { version = "0.36.2", features = ["svg"] }
+egui-lucide = "0.1.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+# Release builds are for shipping a single binary per app, so favour size and
+# runtime speed over compile time.
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

@@ -1,0 +1,16 @@
+[package]
+name = "ui-shell"
+version.workspace = true
+edition.workspace = true
+description = "Shared window chrome: header, sidebar, status bar, and content frame"
+
+[dependencies]
+# The layout crate needs widgets unconditionally; that is its whole job.
+ui-kit = { workspace = true, features = ["widgets", "icons"] }
+egui.workspace = true
+eframe.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

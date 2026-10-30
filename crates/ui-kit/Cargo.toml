@@ -1,0 +1,23 @@
+[package]
+name = "ui-kit"
+version.workspace = true
+edition.workspace = true
+description = "Design tokens, theme, and widget primitives shared by every zebra app"
+
+[features]
+default = []
+# Widgets and the egui visual overrides. Off by default so a headless consumer
+# (daemon, CLI, report renderer) can use tokens and theme without compiling a
+# renderer, windowing system, or GPU stack.
+widgets = ["dep:egui"]
+# The icon vocabulary. Kept apart from `widgets` so a product that draws its own
+# glyphs (or a headless consumer) does not compile an SVG rasteriser.
+icons = ["widgets", "dep:egui-lucide", "dep:egui_extras"]
+
+[dependencies]
+egui = { workspace = true, optional = true }
+egui-lucide = { workspace = true, optional = true }
+egui_extras = { workspace = true, optional = true }
+
+[lints]
+workspace = true

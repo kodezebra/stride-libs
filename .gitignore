@@ -1,0 +1,24 @@
+# Cargo build output. One target/ per workspace, never nested per crate.
+/target
+**/target
+
+# Cargo.lock IS committed on purpose: this workspace ships binaries, so the
+# lockfile is the record of exactly which versions each app was built with.
+
+# Local databases written at runtime.
+*.db
+*.db-shm
+*.db-wal
+
+# Logs and crash dumps.
+*.log
+
+# Environment and secrets.
+.env
+.env.*
+
+# Editor / OS noise.
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/settings.json
