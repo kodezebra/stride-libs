@@ -1,12 +1,13 @@
-# Zebra workspace root.
+# Stride libs workspace root.
 #
 # This file is a *virtual* manifest: it has no [package] section, so the root
-# itself is not a crate. Members live in crates/ (libraries) and apps/
-# (binaries). The globs mean adding a crate never requires editing this file.
+# itself is not a crate. Every member is shared plumbing in crates/. Products
+# live in their own repos (stride-pos, stride-school). The glob means adding a
+# crate never requires editing this file.
 
 [workspace]
 resolver = "3"
-members = ["crates/*", "apps/*"]
+members = ["crates/*"]
 
 [workspace.package]
 version = "0.1.0"

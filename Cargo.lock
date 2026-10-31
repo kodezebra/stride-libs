@@ -2124,19 +2124,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pos"
-version = "0.1.0"
-dependencies = [
- "app-boot",
- "config",
- "serde",
- "storage",
- "tracing",
- "ui-kit",
- "ui-shell",
-]
-
-[[package]]
 name = "potential_utf"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2406,19 +2393,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "school"
-version = "0.1.0"
-dependencies = [
- "app-boot",
- "config",
- "serde",
- "storage",
- "tracing",
- "ui-kit",
- "ui-shell",
 ]
 
 [[package]]
