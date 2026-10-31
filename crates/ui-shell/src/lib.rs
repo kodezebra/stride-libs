@@ -1,4 +1,4 @@
-//! Shared window chrome for every zebra product.
+//! Shared window chrome for every stride product.
 //!
 //! An app declares its screens and slots; this crate draws the header, the
 //! navigation sidebar, the status bar, and the content frame around whichever

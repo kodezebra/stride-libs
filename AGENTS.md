@@ -15,6 +15,15 @@ Never product → product.
 
 Repo names carry the `stride-` prefix. Crate names never do: `ui-kit`, not `stride-ui-kit`.
 
+Local checkouts sit side by side in one folder:
+
+```
+~/Desktop/stride/
+  libs/     clone of stride-libs (this repo)
+  pos/      clone of stride-pos
+  school/   clone of stride-school
+```
+
 ## Layout
 
 ```
@@ -50,7 +59,7 @@ Do not start step 2 until CI on `main` is green.
 ### Step 2 — move the bookmark in each product that needs it
 
 ```sh
-cd ~/Desktop/stride-pos
+cd ~/Desktop/stride/pos
 SHA=<the SHA from step 1>
 sed -i -E "s|(stride-libs\", rev = \")[0-9a-f]{40}|\1$SHA|g" Cargo.toml
 grep -c "$SHA" Cargo.toml     # must print 5
@@ -84,7 +93,7 @@ Gitignored `<product>/.cargo/config.toml`:
 
 ```toml
 [patch."https://github.com/OWNER/stride-libs"]
-ui-kit = { path = "../stride/crates/ui-kit" }
+ui-kit = { path = "../libs/crates/ui-kit" }
 ```
 
 The key must be the **git URL**, not `crates-io` — patching `crates-io` for a git dependency

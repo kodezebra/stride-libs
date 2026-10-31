@@ -1,4 +1,4 @@
-//! Process plumbing every zebra app needs before it can do anything useful.
+//! Process plumbing every stride app needs before it can do anything useful.
 //!
 //! `app-boot` answers "how does the process behave": where its files live, where
 //! logs go, what happens on a panic, and what exit code the shell sees. It

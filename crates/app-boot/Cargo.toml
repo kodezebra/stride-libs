@@ -2,7 +2,7 @@
 name = "app-boot"
 version.workspace = true
 edition.workspace = true
-description = "Process concerns shared by zebra apps: logging, panic hook, directories, exit codes"
+description = "Process concerns shared by stride apps: logging, panic hook, directories, exit codes"
 
 [dependencies]
 anyhow.workspace = true

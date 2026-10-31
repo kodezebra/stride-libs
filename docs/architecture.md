@@ -1,34 +1,39 @@
-# Zebra — workspace architecture
+# Stride — workspace architecture
 
-Zebra is one Cargo workspace holding several desktop products (`pos`, `school`,
-and whatever comes next) plus the libraries they share. This document explains
-the layout, the rules that keep it healthy, and the conventions each crate
-follows. It is the reference for "where does this code go?".
+Stride is three Cargo repos. `stride-libs` (this one) holds the crates the
+products share; `stride-pos` and `stride-school` each hold one product. Products
+depend on this repo at a pinned commit; this repo never depends on a product.
+
+This document explains the layout, the rules that keep it healthy, and the
+conventions each crate follows. It is the reference for "where does this code
+go?".
 
 ---
 
 ## 1. Layout
 
 ```
-zebra/
+stride-libs/
 ├── Cargo.toml              virtual workspace manifest (no [package])
 ├── Cargo.lock              committed — see §8
 ├── rust-toolchain.toml     tracks the stable channel
+├── AGENTS.md               rules + the rev-bump procedure
 ├── docs/architecture.md    this file
-├── crates/                 shared libraries
-│   ├── ui-kit/             tokens + theme (+ widgets and icons behind features)
-│   ├── ui-shell/           layout regions and the ready-made `Shell`
-│   ├── storage/            SQLite open / pragmas / migrations
-│   ├── config/             JSON settings read + atomic write
-│   └── app-boot/           logging, panic hook, directories, exit codes
-└── apps/                   one binary per product
-    ├── pos/
-    └── school/
+└── crates/                 shared libraries
+    ├── ui-kit/             tokens + theme (+ widgets and icons behind features)
+    ├── ui-shell/           layout regions and the ready-made `Shell`
+    ├── storage/            SQLite open / pragmas / migrations
+    ├── config/             JSON settings read + atomic write
+    └── app-boot/           logging, panic hook, directories, exit codes
 ```
 
-`members = ["crates/*", "apps/*"]` means **adding a crate never requires editing
-the root manifest**. Every directory directly under `crates/` and `apps/` must
-contain a `Cargo.toml`, or the glob fails to resolve.
+`members = ["crates/*"]` means **adding a crate never requires editing the root
+manifest**. Every directory directly under `crates/` must contain a
+`Cargo.toml`: Cargo errors when a member glob matches nothing, so an empty
+`crates/` is not a valid workspace.
+
+Products are separate repos with the same `crates/` + `apps/<name>/` shape, so a
+product can grow internal crates later without restructuring. See §9.
 
 ---
 
@@ -41,20 +46,22 @@ contain a `Cargo.toml`, or the glob fails to resolve.
 | `storage` | lib | Opening SQLite, pragmas, `user_version` migrations | Product tables, repositories, queries |
 | `config` | lib | Reading/atomically writing a JSON settings file | A settings schema, theme knowledge |
 | `app-boot` | lib | Directories, logging, panic hook, exit codes, `Context` | Anything a single app needs |
-| `apps/pos` | bin | POS screens, POS schema, POS settings | Anything another product imports |
+
+Screens, schema, settings and business rules live in the product repos. Nothing
+here may import them, and no product may be imported here.
 
 Rules of thumb:
 
 - **Presentation** → `ui-kit` / `ui-shell`.
-- **Persistence mechanics** → `storage`; **what is stored** → the app.
+- **Persistence mechanics** → `storage`; **what is stored** → the product.
 - **Process behaviour** → `app-boot`.
-- **Business rules** → the app. Always.
+- **Business rules** → the product. Always.
 
 ### Why there is no `core` crate
 
 The obvious first draft is a single `crates/core` holding "common" code. It
 always rots: it gains a database handle, then a theme, then an order type, and
-within a month every app depends on everything and nothing can be removed.
+within a month every product depends on everything and nothing can be removed.
 
 This layout starts with narrow crates instead. If something is shared and has no
 obvious home, that is a signal to name the concern (`money`, `printing`,
@@ -65,30 +72,30 @@ obvious home, that is a signal to name the concern (`money`, `printing`,
 ## 3. Dependency graph
 
 ```
-apps/pos ─┐        apps/school
-          ├─→ ui-shell ─→ ui-kit ─→ egui (+ egui_extras, egui-lucide via `icons`)
-          ├─→ ui-kit
-          ├─→ storage ─→ rusqlite
-          ├─→ config  ─→ serde_json
-          └─→ app-boot ─→ tracing, directories
+stride-pos ─┐        stride-school
+            ├─→ ui-shell ─→ ui-kit ─→ egui (+ egui_extras, egui-lucide via `icons`)
+            ├─→ ui-kit
+            ├─→ storage ─→ rusqlite
+            ├─→ config  ─→ serde_json
+            └─→ app-boot ─→ tracing, directories
 ```
 
-Arrows only ever point **from apps to crates**, never between apps, never back
-from a crate into an app. `app-boot` depends on no other zebra crate — that
-independence is what stops it becoming the new `core`.
+Arrows only ever point **from a product into these crates**, never between
+products, never back from a crate into a product. `app-boot` depends on no other
+Stride crate — that independence is what stops it becoming the new `core`.
 
 ---
 
 ## 4. The UI model: shared chrome, pluggable content
 
-`ui-shell` owns the frame. An app supplies:
+`ui-shell` owns the frame. A product supplies:
 
 - **screens** — `impl Screen<State>`, registered in sidebar order;
 - **header actions** — closures bound to app state;
 - **a status bar** — a closure deriving one line from app state.
 
 ```rust
-Shell::new("Zebra POS")
+Shell::new("Stride POS")
     .theme(theme)
     .persist_in(ctx.dirs.config.clone())
     .screen(SalesScreen)
@@ -134,16 +141,16 @@ inherit. `ui_shell::regions` exposes the pieces:
 | `Palette` + `Command<S>` | `Ctrl+P` command palette over app state |
 | `run_app(title, size, builder)` | the eframe entry point every product shares |
 
-POS assembles them itself (`apps/pos/src/shell.rs`): no header, a 52 px activity
-rail, a sidebar owned by the selected module, a cart column inside the Sell
-workspace, and a 28 px status bar. `Shell` remains untouched for school, which
-wants a header and a list of screens.
+POS assembles them itself in its own repo: no header, a 52 px activity rail, a
+sidebar owned by the selected module, a cart column inside the Sell workspace,
+and a 28 px status bar. `Shell` remains untouched for school, which wants a
+header and a list of screens.
 
 The rule this encodes: **chrome is shared, the skeleton is not.** A product that
 needs a different arrangement composes regions; it never adds a flag to `Shell`
 that every other product then pays for.
 
-Module lists, hotkeys, and prefs are app-side: POS keeps
+Module lists, hotkeys, and prefs are product-side: POS keeps
 `{ "module": <index>, "sidebar": [<bool>; N] }` in `<config>/pos/prefs.json`,
 deliberately separate from the shop's `settings.json` and from
 `ui-shell`'s `shell.json` (one person's window habits are not shop
@@ -160,9 +167,9 @@ ui-kit.workspace = true                              # tokens + theme only, no r
 ui-kit = { workspace = true, features = ["widgets"] } # + widget primitives + egui
 ```
 
-`ui-shell` always enables `widgets`, so every desktop app gets them by feature
-unification. A future daemon, CLI admin tool, or receipt/PDF renderer can depend
-on `ui-kit` and get brand colours without compiling egui, winit, or wgpu.
+`ui-shell` always enables `widgets`, so every desktop product gets them by
+feature unification. A future daemon, CLI admin tool, or receipt/PDF renderer can
+depend on `ui-kit` and get brand colours without compiling egui, winit, or wgpu.
 
 This mirrors egui's own split (`egui` core vs `eframe` backend) without a second
 manifest. Split out a `ui-egui` crate only when a **second** renderer target
@@ -175,10 +182,10 @@ conversion to `egui::Color32` happens at the edge, behind `widgets`.
 
 `ui-kit`'s `icons` feature (which implies `widgets`) exposes a curated `Icon`
 newtype and constants (`Icon::CART`, `Icon::PACKAGE`, …) backed by
-`egui-lucide` + `egui_extras`' SVG loader. Apps name icons from that vocabulary
-and never import the icon crate, so swapping the set is one crate's work rather
-than a search across products. `theme::install` registers the image loaders
-once at startup; without it every icon would silently paint nothing.
+`egui-lucide` + `egui_extras`' SVG loader. Products name icons from that
+vocabulary and never import the icon crate, so swapping the set is one crate's
+work rather than a search across products. `theme::install` registers the image
+loaders once at startup; without it every icon would silently paint nothing.
 
 ---
 
@@ -199,8 +206,8 @@ once at startup; without it every icon would silently paint nothing.
   being half-migrated. The ids (`pos` `1836624513`, `school` `2014884902`) are
   arbitrary and permanent — never recompute them from the app's name.
 - Migrations are forward-only slices of `Migration { version, name, sql }` owned
-  by the app (`apps/<app>/src/db.rs`), applied in ascending version inside one
-  transaction each, tracked with SQLite's `user_version`.
+  by the product (`apps/<app>/src/db.rs` in its own repo), applied in ascending
+  version inside one transaction each, tracked with SQLite's `user_version`.
 - **Never edit a migration that has shipped.** Append `version: 2`.
 - There is no shared repository layer: each app queries through
   `store.conn()`.
@@ -278,18 +285,24 @@ Screen-reader support is a decision to take on its own, not a side effect.
 
 Rules:
 
-- **Declare once, consume everywhere.** Third-party versions live only in the
-  root manifest; members write `name.workspace = true`. Never a bare version in
-  a member manifest, or two apps drift onto different `serde` builds.
-- **Commit `Cargo.lock`.** This workspace ships binaries, so the lockfile is the
+- **Declare once per repo, consume everywhere in it.** Third-party versions live
+  only in a repo's root manifest; members write `name.workspace = true`. Never a
+  bare version in a member manifest.
+- **The product repos carry a copy of this table.** There is no shared manifest
+  across repos, so a third-party bump is one commit here and one in each product
+  — keep the copies aligned, or the two products drift onto different `serde`
+  builds. A libs `rev` bump is a separate, more frequent operation; see
+  `AGENTS.md`.
+- **Commit `Cargo.lock`.** These repos ship binaries, so the lockfile is the
   record of what was built. Build with `--locked` in CI.
 - **Verify offline after any manifest change**: `cargo build --offline`. If it
   succeeds, no network was used. If it fails, cargo names the exact crate and
   requirement it could not satisfy — spend the download deliberately.
 - **Adding a dependency** is a three-step decision: is it already in
   `~/.cargo/registry` (`ls ~/.cargo/registry/cache/index.crates.io-*/ | grep <name>`),
-  do two products need it, and does it belong in `[workspace.dependencies]`
-  (shared) or that app's own manifest (one product only).
+  do two products need it, and does it belong here (shared) or in one product's
+  own manifest. If two products need it, it belongs in this repo as a crate or
+  behind an existing one — not copy-pasted into both.
 - Do **not** set `net.offline = true` in `.cargo/config.toml`; that makes adding
   a dependency painful. Use `--offline` per command.
 
@@ -299,20 +312,6 @@ registry cache is shared and separate.
 ---
 
 ## 9. Adding things
-
-**New app**
-
-```bash
-cargo new --bin --vcs none apps/inventory
-# add deps to apps/inventory/Cargo.toml, e.g.:
-#   app-boot.workspace = true
-#   ui-shell.workspace = true
-#   storage.workspace = true
-cargo run -p inventory
-```
-
-No root manifest edit. The app gets its own database file, its own settings
-schema, and its own screens.
 
 **New shared crate**
 
@@ -326,15 +325,17 @@ Promotion rule: a crate enters `crates/` when a **second** product needs it, or
 when it is infrastructure whose absence would mean copy-paste (as with
 `app-boot`). Never pre-emptively, never "because it looks reusable".
 
-**New screen in an existing app** — for school, a file in
-`apps/<app>/src/screens.rs` (or a `screens/` module) implementing
-`Screen<State>`, plus one `.screen(...)` line in `main`.
+**New product** — a new repo, not a directory here:
 
-**New POS module** — a struct in `apps/pos/src/modules.rs` implementing
-`Module` (`title`, `icon`, `hotkey`, `fixed_sidebar`, `sidebar`, `workspace`),
-one entry in `modules::all()`, one key in the `F1`–`F8` band, and a bump of
-`modules::COUNT`. `F6`–`F8` are reserved for inventory, suppliers, and purchase
-orders.
+1. `stride-<name>` with the same shape: `Cargo.toml`, `Cargo.lock`, `.gitignore`,
+   `AGENTS.md`, `apps/<name>/`, `crates/`.
+2. Pin all five crates to one `stride-libs` `rev` in its
+   `[workspace.dependencies]`, and copy the third-party table from §8.
+3. Own schema, own migration band, own `application_id`, own version in
+   `apps/<name>/Cargo.toml`, own tag prefix `<name>-v`.
+4. `crates/*` joins its members list when its first internal crate lands.
+
+**New screen or module** — in the product repo, not here.
 
 ---
 
@@ -349,7 +350,7 @@ orders.
 | Window geometry persistence | Needs eframe's `persistence` feature | Users complain the window forgets its size |
 | Auto-update | Network + signing + platform installers | After the first real release |
 | Runtime plugins (`.so`) | Requires a stable ABI / WASM host; would dominate the design | Third-party extensibility is a product requirement |
-| CI workflow | Not requested yet; `cargo test` and `clippy -D warnings` are run by hand | Before the first shared deployment |
+| CI workflow | Not present in any of the three repos yet; `cargo test` and `clippy -D warnings` are run by hand | Before the first shared deployment |
 | `clap` CLI entry per app | Dependency is pinned but unused | An app needs headless/migration subcommands |
 
 Each row lists the missing dependency, so the offline-build policy in §8 can be
@@ -357,19 +358,15 @@ checked before adding it.
 
 ---
 
-## 11. Known gaps in this scaffold
+## 11. Known gaps
 
-- POS's product catalogue is a placeholder: `QUICK_KEYS` in
-  `apps/pos/src/state.rs` is the one invented list in the app, and it is marked
-  as such. The grid, cart, and money paths are real code.
-- Pay is not implemented. The button says so rather than showing a success
-  state, because a till that fakes a sale is worse than one that refuses.
-- Nothing is synced. `pos` is a single local database; `origin`, `lamport`, and
-  `deleted_at` are not in the schema yet.
-- School's screens are still placeholders: they prove the wiring, not the
-  product.
-- `#[allow(dead_code)]` is avoided on purpose; if a scaffolded item is unused,
-  delete it rather than silence the warning.
+Product gaps — the placeholder catalogue, unimplemented pay, missing sync, and
+school's placeholder screens — are tracked in `stride-pos` and `stride-school`,
+where the code is. This repo has no CI workflow and no release automation yet;
+see §10.
+
+`#[allow(dead_code)]` is avoided on purpose: if a scaffolded item is unused,
+delete it rather than silence the warning.
 
 ---
 
@@ -378,19 +375,11 @@ checked before adding it.
 ```bash
 cargo build --offline                    # prove no network is needed
 cargo check                              # the day-to-day loop
-cargo build -p pos                       # one app
-cargo run -p pos
 cargo test --offline --locked
 cargo clippy --offline --all-targets -- -D warnings
 cargo fmt --all
-RUST_LOG=debug cargo run -p pos          # verbose logging
 ```
 
-`cargo build --release` is CI-only: `target/release` costs 2–3 GB on a
-disk-constrained machine and the artifact is rebuilt by CI anyway.
-
-Logs: `~/.local/share/pos/logs/pos.log`
-Data: `~/.local/share/pos/pos.db`
-Settings: `~/.config/pos/settings.json`
-Window habits (POS): `~/.config/pos/prefs.json`
-Shell state (school): `~/.config/school/shell.json`
+There are no binaries here. App commands (`cargo run -p pos`, `cargo build
+--release`) run in the product repo, which is also where the release profile and
+the app's runtime paths (`~/.local/share/pos/…`, `~/.config/pos/…`) apply.

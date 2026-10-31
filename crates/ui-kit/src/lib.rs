@@ -1,4 +1,4 @@
-//! Shared look-and-feel for every zebra app.
+//! Shared look-and-feel for every stride app.
 //!
 //! Presentation only: tokens, theme, and (behind the `widgets` and `icons`
 //! features) widget primitives and the icon vocabulary. There is deliberately no

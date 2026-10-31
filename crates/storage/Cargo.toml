@@ -2,7 +2,7 @@
 name = "storage"
 version.workspace = true
 edition.workspace = true
-description = "SQLite plumbing shared by zebra apps: open, pragmas, migrations"
+description = "SQLite plumbing shared by stride apps: open, pragmas, migrations"
 
 [dependencies]
 anyhow.workspace = true

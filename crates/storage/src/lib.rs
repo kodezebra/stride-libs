@@ -25,7 +25,7 @@ pub struct Migration {
     pub sql: &'static str,
 }
 
-/// An open database connection with the pragmas every zebra app needs.
+/// An open database connection with the pragmas every stride app needs.
 pub struct Store {
     conn: Connection,
 }

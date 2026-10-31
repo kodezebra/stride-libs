@@ -2,7 +2,7 @@
 name = "ui-kit"
 version.workspace = true
 edition.workspace = true
-description = "Design tokens, theme, and widget primitives shared by every zebra app"
+description = "Design tokens, theme, and widget primitives shared by every stride app"
 
 [features]
 default = []
