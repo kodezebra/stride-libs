@@ -270,6 +270,13 @@ mod tests {
     }
 
     #[test]
+    fn the_generic_iso_symbol_falls_back_to_the_code() {
+        // ISO uses `¤` where it has no symbol. Printing it would be a puzzle,
+        // so the code is the honest label.
+        assert_eq!(Money::new(1_250, currency("SSP")).format(), "SSP 12.50");
+    }
+
+    #[test]
     fn parsing_accepts_what_a_cashier_types() {
         let kes = currency("KES");
         assert_eq!(Money::parse("123.45", kes), Ok(Money::new(12_345, kes)));

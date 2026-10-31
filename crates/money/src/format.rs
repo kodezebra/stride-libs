@@ -62,8 +62,10 @@ pub(crate) fn format(money: Money) -> String {
 
     // `$12.50` reads as one token; `USh 1200` needs the gap or the letters run
     // into the number. A symbol with any letter in it is a word, not a glyph.
+    // ISO's generic `¤` is not a symbol a customer should ever see: fall back to
+    // the code, the same way as for a currency with no symbol at all.
     let symbol = currency.symbol().to_string();
-    let (symbol, space) = if symbol.is_empty() {
+    let (symbol, space) = if symbol.is_empty() || symbol == "¤" {
         (currency.code().to_owned(), " ")
     } else if symbol.chars().any(char::is_alphabetic) {
         (symbol, " ")
