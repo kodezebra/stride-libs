@@ -45,12 +45,22 @@ So a libs change is always **two commits in two repos**.
 
 ### Step 1 — land the change here
 
+`main` only moves by merge. Work on a branch and open a PR; merge once CI is green.
+
 ```sh
+git switch -c ui-kit/<what-changed>
 cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 cargo test --locked
 git add -A && git commit -m "ui-kit: <what changed>"
-git push origin main
+git push -u origin ui-kit/<what-changed>
+gh pr create --fill
+```
+
+Then, on an up-to-date `main`:
+
+```sh
+git switch main && git pull
 git rev-parse HEAD        # copy this 40-char SHA
 ```
 
@@ -60,14 +70,18 @@ Do not start step 2 until CI on `main` is green.
 
 ```sh
 cd ~/Desktop/stride/pos
+git switch main && git pull
 SHA=<the SHA from step 1>
+git switch -c chore/libs-${SHA:0:8}
 sed -i -E "s|(stride-libs\", rev = \")[0-9a-f]{40}|\1$SHA|g" Cargo.toml
 grep -c "$SHA" Cargo.toml     # 6 in pos, 5 in school until it uses `money`
 cargo check
 git add Cargo.toml Cargo.lock
 git commit -m "chore(deps): stride-libs ${SHA:0:8}"
-git push
+git push -u origin chore/libs-${SHA:0:8}
 ```
+
+Merge the branch the same way: PR, green CI, then merge.
 
 `Cargo.lock` goes in the same commit: CI builds `--locked`, and the lock is where the
 resolved SHA is recorded.
@@ -82,6 +96,8 @@ resolved SHA is recorded.
 
 ### Rules
 
+- Never commit directly to `main` in any of the three repos. A change lands on a branch and
+  merges; `main` is what the `rev` bookmarks point at, so it must only move by merge.
 - Never write a `rev` that is not a pushed commit on `stride-libs` `main`.
 - Never use `branch =` or `tag =` for these deps. Never `cargo update` them.
 - Never force-push or rebase `stride-libs` `main`. A shipped tag must still resolve its SHA.
