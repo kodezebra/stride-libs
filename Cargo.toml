@@ -23,6 +23,7 @@ ui-shell = { path = "crates/ui-shell" }
 storage = { path = "crates/storage" }
 config = { path = "crates/config" }
 app-boot = { path = "crates/app-boot" }
+money = { path = "crates/money" }
 
 # ---- third-party ---------------------------------------------------------
 # Versions are pinned to what is already cached in ~/.cargo/registry, so a
@@ -37,6 +38,10 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 directories = "6.0.0"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
+# ISO 4217 currency metadata: codes, exponents, symbols. Exact pin: 0.7.x is a
+# data snapshot, and a minor release can add or retire a currency. It pulls
+# `iso_country` and `lazy_static`; both were fetched deliberately for `money`.
+iso_currency = "=0.7.1"
 # `default-features = false` on purpose: eframe's defaults switched from glow to
 # wgpu in 0.36, so relying on them would silently swap the rendering backend.
 # `accesskit` is also left off: egui-winit 0.36 needs accesskit 0.24, which is

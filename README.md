@@ -4,7 +4,7 @@ Shared Rust crates for the Stride desktop products. This is one of three repos:
 
 | Repo | Holds |
 |---|---|
-| `stride-libs` (this one) | `ui-kit`, `ui-shell`, `storage`, `config`, `app-boot` |
+| `stride-libs` (this one) | `ui-kit`, `ui-shell`, `storage`, `config`, `money`, `app-boot` |
 | `stride-pos` | the till: screens, schema, migrations, releases |
 | `stride-school` | school admin: same |
 
@@ -31,6 +31,7 @@ build there.
 | A widget every product can use | `crates/ui-kit/src/components/` |
 | Header, sidebar, content frame, slots | `crates/ui-shell/src/` |
 | Database open/migrate/query plumbing | `crates/storage/src/` |
+| Amounts, currency, parsing and formatting money | `crates/money/src/` |
 | Settings file read/write | `crates/config/src/` |
 | Logging, panic hook, data directories, exit codes | `crates/app-boot/src/` |
 | A screen, a command, a domain rule for one product | that product's repo, not here |

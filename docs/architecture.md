@@ -24,6 +24,7 @@ stride-libs/
     ├── ui-shell/           layout regions and the ready-made `Shell`
     ├── storage/            SQLite open / pragmas / migrations
     ├── config/             JSON settings read + atomic write
+    ├── money/              integer minor-unit amounts, one currency
     └── app-boot/           logging, panic hook, directories, exit codes
 ```
 
@@ -45,6 +46,7 @@ product can grow internal crates later without restructuring. See §9.
 | `ui-shell` | lib | Layout regions (`rail`, `Sidebar`, `status`, `workspace`, `Palette`) and the assembled `Shell` on top of them | Product screens, domain state, storage |
 | `storage` | lib | Opening SQLite, pragmas, `user_version` migrations | Product tables, repositories, queries |
 | `config` | lib | Reading/atomically writing a JSON settings file | A settings schema, theme knowledge |
+| `money` | lib | Integer minor-unit amounts, ISO currency metadata, parsing and formatting | Floats, I/O, database access, country labels, tax tables |
 | `app-boot` | lib | Directories, logging, panic hook, exit codes, `Context` | Anything a single app needs |
 
 Screens, schema, settings and business rules live in the product repos. Nothing
@@ -270,18 +272,19 @@ present in `~/.cargo/registry` on this machine, so a clean build fetches nothing
 | `anyhow` / `thiserror` | `1.0.104` / `2.0.21` | |
 | `tracing` / `tracing-subscriber` | `0.1.44` / `0.3.23` | `env-filter` |
 | `directories` | `6.0.0` | |
+| `iso_currency` | `=0.7.1` | ISO 4217 data: codes, exponents, symbols. Exact pin because a minor release can add or retire a currency. Pulls `iso_country` |
 | `clap` | `4.6.7` | not used yet — there for CLI tooling |
 
 `rust-version` is `1.95` (edition 2024). `rust-toolchain.toml` tracks `stable`
 so the file documents intent without forcing a toolchain download.
 
-Two dependencies were fetched **deliberately** for the 0.36 bump, because they
-were not in the local registry: `accesskit 0.24.1` (a non-optional dependency of
-`egui-winit` 0.36) and `resvg 0.45.1` (pulled by `egui_extras`' `svg` feature).
-Anything further must be fetched the same way — once, on purpose, with
-`Cargo.lock` committed and this list updated. eframe's own `accesskit` feature
-stays **off**: it would need `accesskit_winit`, which has not been fetched.
-Screen-reader support is a decision to take on its own, not a side effect.
+Four packages were fetched **deliberately**, because they were not in the local
+registry: `accesskit 0.24.1` and `resvg 0.45.1` for the 0.36 bump, and
+`iso_currency 0.7.1` + `iso_country 0.1.4` for `money`. Anything further must be fetched the same way —
+once, on purpose, with `Cargo.lock` committed and this list updated. eframe's
+own `accesskit` feature stays **off**: it would need `accesskit_winit`, which
+has not been fetched. Screen-reader support is a decision to take on its own,
+not a side effect.
 
 Rules:
 

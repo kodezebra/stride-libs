@@ -9,7 +9,7 @@ Never product → product.
 
 | Repo | Holds |
 |---|---|
-| `stride-libs` (this one) | ui-kit, ui-shell, storage, config, app-boot |
+| `stride-libs` (this one) | ui-kit, ui-shell, storage, config, money, app-boot |
 | `stride-pos` | the till: workspace, lockfile, migrations, releases |
 | `stride-school` | school admin: same |
 
@@ -62,7 +62,7 @@ Do not start step 2 until CI on `main` is green.
 cd ~/Desktop/stride/pos
 SHA=<the SHA from step 1>
 sed -i -E "s|(stride-libs\", rev = \")[0-9a-f]{40}|\1$SHA|g" Cargo.toml
-grep -c "$SHA" Cargo.toml     # must print 5
+grep -c "$SHA" Cargo.toml     # 6 in pos, 5 in school until it uses `money`
 cargo check
 git add Cargo.toml Cargo.lock
 git commit -m "chore(deps): stride-libs ${SHA:0:8}"
@@ -75,6 +75,8 @@ resolved SHA is recorded.
 ### Which products to bump
 
 - `ui-kit`, `ui-shell` — bump whenever convenient. Visual only, safe to lag.
+- `money` — pure arithmetic and formatting. Safe to lag; bump it with the product whose
+  stored amounts or parser would change.
 - `storage`, `config`, `app-boot` — bump **both products in the same week**, and open an
   existing database and settings file afterwards. These touch shipped data.
 
@@ -108,6 +110,10 @@ cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 cargo test --locked
 ```
+
+Every third-party crate is already in `~/.cargo/registry`; the two fetched for `money`
+(`iso_currency`, `iso_country`) are listed in `docs/architecture.md` §8. Adding another is
+one deliberate online fetch, then `--offline` must work again.
 
 ## Hard rules
 
