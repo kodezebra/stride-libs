@@ -20,6 +20,7 @@ use std::error::Error;
 use std::path::PathBuf;
 
 use ui_kit::theme::Theme;
+use ui_kit::tokens::Palette;
 
 /// Re-exported so apps never declare their own egui dependency and can never
 /// drift onto a second, incompatible egui version.
@@ -62,6 +63,10 @@ type StatusText<S> = Box<dyn Fn(&S) -> String>;
 pub struct Shell<S> {
     title: String,
     theme: Theme,
+    /// The product's own palette for the light side of the switch.
+    light_palette: Palette,
+    /// The product's own palette for the dark side of the switch.
+    dark_palette: Palette,
     screens: Vec<Box<dyn Screen<S>>>,
     actions: Vec<HeaderAction<S>>,
     status: Option<StatusText<S>>,
@@ -74,6 +79,8 @@ impl<S: 'static> Shell<S> {
         Self {
             title: title.into(),
             theme: Theme::default(),
+            light_palette: Palette::default(),
+            dark_palette: Palette::default(),
             screens: Vec::new(),
             actions: Vec::new(),
             status: None,
@@ -85,6 +92,14 @@ impl<S: 'static> Shell<S> {
     /// Palette to draw with. Apps read this from their settings file.
     pub fn theme(mut self, theme: Theme) -> Self {
         self.theme = theme;
+        self
+    }
+
+    /// The product's own palettes. `ui-shell` never invents brand colors; the
+    /// app supplies them here, one for each side of the theme switch.
+    pub fn palettes(mut self, light: Palette, dark: Palette) -> Self {
+        self.light_palette = light;
+        self.dark_palette = dark;
         self
     }
 
@@ -154,7 +169,11 @@ impl<S: 'static> Shell<S> {
             options,
             Box::new(
                 move |cc| -> Result<Box<dyn eframe::App>, Box<dyn Error + Send + Sync>> {
-                    ui_kit::theme::install(&cc.egui_ctx, app.shell.theme);
+                    let (palette, dark) = match app.shell.theme {
+                        Theme::Light => (&app.shell.light_palette, false),
+                        Theme::Dark => (&app.shell.dark_palette, true),
+                    };
+                    ui_kit::theme::install(&cc.egui_ctx, palette, dark);
                     Ok(Box::new(app))
                 },
             ),

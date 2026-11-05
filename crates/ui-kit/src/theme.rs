@@ -1,14 +1,20 @@
-//! Theme selection, palette values, and the one place fonts are installed.
+//! Theme selection and palette application.
+//!
+//! `ui-kit` owns the mechanism — the `Theme` selector, the `Palette` struct,
+//! and applying a palette to an egui context. Each product owns its own palette
+//! values: a coffee shop till, a school admin, and a clinic desk all look
+//! different, and none of that brand domain belongs here.
 
-use crate::tokens::{Palette, RADII, Rgb, SPACING, TYPE};
+use crate::tokens::Palette;
 
 /// Which palette an app is drawn with.
 ///
 /// Stored as a string in each app's settings file (see the `config` crate), so
 /// changing the on-disk spelling is a breaking change for existing installs.
 ///
-/// Light is the default: a till sits under shop lighting next to a window, and
-/// a dark screen reads as a dead terminal to a customer standing at the counter.
+/// The app maps this to its own palette: [`Theme::Light`] is not "the light
+/// palette", it is "the light side of the switch", and each product decides
+/// what colors that means.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Theme {
     #[default]
@@ -17,13 +23,6 @@ pub enum Theme {
 }
 
 impl Theme {
-    pub fn palette(self) -> Palette {
-        match self {
-            Theme::Light => LIGHT,
-            Theme::Dark => DARK,
-        }
-    }
-
     pub fn name(self) -> &'static str {
         match self {
             Theme::Light => "light",
@@ -59,77 +58,37 @@ impl Theme {
     }
 }
 
-/// Dark theme — Scandinavian FinTech.
-///
-/// Slate-obsidian shell, muted slate surfaces, electric-mint primary actions.
-/// Cool, calm, hyper-legible for low-light hours; the mint stays visually sharp
-/// without the optical intensity of saturated orange or blue.
-const DARK: Palette = Palette {
-    bg: Rgb::hex(0x0f_17_2a),
-    surface: Rgb::hex(0x1e_29_3b),
-    surface_alt: Rgb::hex(0x33_41_55),
-    text: Rgb::hex(0xf8_fa_fc),
-    text_muted: Rgb::hex(0x94_a3_b8),
-    accent: Rgb::hex(0x14_b8_a6),
-    accent_text: Rgb::hex(0x0f_17_2a),
-    accent_soft: Rgb::hex(0x16_4e_4b),
-    border: Rgb::hex(0x33_41_55),
-    border_strong: Rgb::hex(0x64_74_8b),
-    danger: Rgb::hex(0xef_44_44),
-    success: Rgb::hex(0x34_d3_99),
-    warning: Rgb::hex(0xf5_9e_0b),
-};
-
-/// Light theme — Artisanal Coffee & Boutique Retail.
-///
-/// Warm cashmere-cream canvas, deep warm-charcoal shell, deep-emerald primary.
-/// Organic and low-blue-light, easy on the eyes in bright retail, and nothing
-/// like corporate POS software. The default: a till under shop lighting next to
-/// a window, where a dark screen reads as a dead terminal to a customer.
-const LIGHT: Palette = Palette {
-    bg: Rgb::hex(0xf5_f5_f4),
-    surface: Rgb::hex(0xff_ff_ff),
-    surface_alt: Rgb::hex(0xe7_e5_e4),
-    text: Rgb::hex(0x1c_19_17),
-    text_muted: Rgb::hex(0x6e_66_5d),
-    accent: Rgb::hex(0x04_78_57),
-    accent_text: Rgb::hex(0xff_ff_ff),
-    accent_soft: Rgb::hex(0xdc_fce7),
-    border: Rgb::hex(0xd6_d3_ce),
-    border_strong: Rgb::hex(0xb9_b4_ac),
-    danger: Rgb::hex(0xc0_39_2b),
-    success: Rgb::hex(0x84cc16),
-    warning: Rgb::hex(0xd9_77_06),
-};
-
 /// Apply a palette to an egui context.
 ///
-/// Called once at startup by `ui-shell`. A product's shell may call it again
-/// when the user changes the appearance setting — the shell is the only place
-/// allowed to touch global visuals; screens never do.
+/// Called once at startup by `ui-shell` or a product's own shell. A product's
+/// shell may call it again when the user changes the appearance setting — the
+/// shell is the only place allowed to touch global visuals; screens never do.
+///
+/// `palette` is the product's own color set for this theme; `dark` tells egui
+/// whether to use dark-mode chrome. The two are independent: a product could
+/// ship a dark theme with a light palette or vice versa.
 #[cfg(feature = "widgets")]
-pub fn install(ctx: &egui::Context, theme: Theme) {
+pub fn install(ctx: &egui::Context, palette: &Palette, dark: bool) {
     install_fonts(ctx);
-    install_style(ctx, theme);
+    install_style(ctx, palette, dark);
     install_image_loaders(ctx);
 
-    // Remember the choice so widgets can read palette roles without every call
-    // site threading a `Theme` through. `ctx.data` is per-context, so two
+    // Remember the palette so widgets can read it without every call site
+    // threading a `&Palette` through. `ctx.data` is per-context, so two
     // windows in one process cannot disagree.
-    ctx.data_mut(|data| data.insert_temp(theme_id(), theme));
+    ctx.data_mut(|data| data.insert_temp(palette_id(), *palette));
 }
 
 /// The palette the current context was installed with.
 #[cfg(feature = "widgets")]
 pub fn current(ctx: &egui::Context) -> Palette {
-    ctx.data(|data| data.get_temp::<Theme>(theme_id()))
+    ctx.data(|data| data.get_temp::<Palette>(palette_id()))
         .unwrap_or_default()
-        .palette()
 }
 
 #[cfg(feature = "widgets")]
-fn theme_id() -> egui::Id {
-    egui::Id::new("ui_kit_theme")
+fn palette_id() -> egui::Id {
+    egui::Id::new("ui_kit_palette")
 }
 
 /// The semibold family: Open Sans Semibold. Use through [`semibold`] so screens
@@ -208,10 +167,7 @@ fn install_fonts(ctx: &egui::Context) {
 }
 
 #[cfg(feature = "widgets")]
-fn install_style(ctx: &egui::Context, theme: Theme) {
-    let palette = theme.palette();
-    let dark = matches!(theme, Theme::Dark);
-
+fn install_style(ctx: &egui::Context, palette: &Palette, dark: bool) {
     let mut visuals = if dark {
         egui::Visuals::dark()
     } else {
@@ -237,11 +193,11 @@ fn install_style(ctx: &egui::Context, theme: Theme) {
     visuals.selection.bg_fill = palette.accent_soft.into();
     visuals.selection.stroke = egui::Stroke::new(1.0_f32, palette.accent);
 
-    visuals.window_corner_radius = egui::CornerRadius::same(RADII.lg as u8);
-    visuals.menu_corner_radius = egui::CornerRadius::same(RADII.md as u8);
+    visuals.window_corner_radius = egui::CornerRadius::same(crate::tokens::RADII.lg as u8);
+    visuals.menu_corner_radius = egui::CornerRadius::same(crate::tokens::RADII.md as u8);
     visuals.window_stroke = egui::Stroke::new(1.0_f32, palette.border);
 
-    let corner = egui::CornerRadius::same(RADII.sm as u8);
+    let corner = egui::CornerRadius::same(crate::tokens::RADII.sm as u8);
     let hairline = egui::Stroke::new(1.0_f32, palette.border);
     let text = egui::Stroke::new(1.0_f32, palette.text);
 
@@ -276,27 +232,27 @@ fn install_style(ctx: &egui::Context, theme: Theme) {
         style.text_styles = [
             (
                 egui::TextStyle::Small,
-                egui::FontId::proportional(TYPE.small),
+                egui::FontId::proportional(crate::tokens::TYPE.small),
             ),
-            (egui::TextStyle::Body, egui::FontId::proportional(TYPE.body)),
+            (egui::TextStyle::Body, egui::FontId::proportional(crate::tokens::TYPE.body)),
             (
                 egui::TextStyle::Button,
-                egui::FontId::proportional(TYPE.button),
+                egui::FontId::proportional(crate::tokens::TYPE.button),
             ),
             (
                 egui::TextStyle::Heading,
-                egui::FontId::proportional(TYPE.heading),
+                egui::FontId::proportional(crate::tokens::TYPE.heading),
             ),
             (
                 egui::TextStyle::Monospace,
-                egui::FontId::new(TYPE.receipt, egui::FontFamily::Monospace),
+                egui::FontId::new(crate::tokens::TYPE.receipt, egui::FontFamily::Monospace),
             ),
         ]
         .into();
 
         // A till is used standing up, often with a finger: controls are taller
         // than egui's desktop defaults on purpose.
-        style.spacing.item_spacing = egui::vec2(SPACING.sm, 6.0);
+        style.spacing.item_spacing = egui::vec2(crate::tokens::SPACING.sm, 6.0);
         style.spacing.button_padding = egui::vec2(12.0, 8.0);
         style.spacing.interact_size = egui::vec2(44.0, 36.0);
     });

@@ -527,10 +527,13 @@ impl<S: 'static, F: FnMut(&mut egui::Ui, &mut S) + 'static> eframe::App for Loos
 ///
 /// This is the counterpart to [`crate::Shell::run`] for products that arrange
 /// their own regions. The theme is installed once, here, for the same reason the
-/// shell does it: screens must never touch global visuals.
+/// shell does it: screens must never touch global visuals. The app supplies its
+/// own palettes — `ui-shell` never invents brand colors.
 pub fn run_app<S, F>(
     title: &str,
     theme: Theme,
+    light_palette: ui_kit::tokens::Palette,
+    dark_palette: ui_kit::tokens::Palette,
     window: Window,
     state: S,
     draw: F,
@@ -553,7 +556,11 @@ where
         options,
         Box::new(
             move |cc| -> Result<Box<dyn eframe::App>, Box<dyn std::error::Error + Send + Sync>> {
-                ui_kit::theme::install(&cc.egui_ctx, theme);
+                let (palette, dark) = match theme {
+                    Theme::Light => (&light_palette, false),
+                    Theme::Dark => (&dark_palette, true),
+                };
+                ui_kit::theme::install(&cc.egui_ctx, palette, dark);
                 Ok(Box::new(app))
             },
         ),

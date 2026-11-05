@@ -37,6 +37,8 @@ impl From<Rgb> for egui::Color32 {
 
 /// The full colour set for one theme. Adding a role here means every app must
 /// supply it; keep this list small and semantic rather than literal.
+/// The full colour set for one theme. Adding a role here means every app must
+/// supply it; keep this list small and semantic rather than literal.
 #[derive(Clone, Copy, Debug)]
 pub struct Palette {
     /// Window background, behind panels.
@@ -64,6 +66,29 @@ pub struct Palette {
     pub success: Rgb,
     /// Caution: unsynced queue, low stock. Distinct from `danger`.
     pub warning: Rgb,
+}
+
+impl Default for Palette {
+    /// A neutral light fallback: used only if nothing has been installed yet.
+    /// Products should always call [`crate::theme::install`] with their own
+    /// palette before drawing.
+    fn default() -> Self {
+        Self {
+            bg: Rgb::hex(0xf7_f8_fa),
+            surface: Rgb::hex(0xff_ff_ff),
+            surface_alt: Rgb::hex(0xee_f1_f5),
+            text: Rgb::hex(0x1b_1f_26),
+            text_muted: Rgb::hex(0x5d_66_75),
+            accent: Rgb::hex(0x25_63_eb),
+            accent_text: Rgb::hex(0xff_ff_ff),
+            accent_soft: Rgb::hex(0xe9_ef_fc),
+            border: Rgb::hex(0xdf_e4_ec),
+            border_strong: Rgb::hex(0x7c_87_98),
+            danger: Rgb::hex(0xd9_2d_20),
+            success: Rgb::hex(0x12_80_5c),
+            warning: Rgb::hex(0xb4_53_09),
+        }
+    }
 }
 
 /// Spacing scale. Everything in the UI should snap to one of these steps.
