@@ -82,7 +82,7 @@ const DARK: Palette = Palette {
 
 /// Light theme — Artisanal Coffee & Boutique Retail.
 ///
-/// Warm cashmere-cream canvas, deep warm-charcoal shell, terracotta primary.
+/// Warm cashmere-cream canvas, deep warm-charcoal shell, deep-emerald primary.
 /// Organic and low-blue-light, easy on the eyes in bright retail, and nothing
 /// like corporate POS software. The default: a till under shop lighting next to
 /// a window, where a dark screen reads as a dead terminal to a customer.
@@ -92,9 +92,9 @@ const LIGHT: Palette = Palette {
     surface_alt: Rgb::hex(0xe7_e5_e4),
     text: Rgb::hex(0x1c_19_17),
     text_muted: Rgb::hex(0x6e_66_5d),
-    accent: Rgb::hex(0xc2_41_0c),
+    accent: Rgb::hex(0x04_78_57),
     accent_text: Rgb::hex(0xff_ff_ff),
-    accent_soft: Rgb::hex(0xfd_ec_e6),
+    accent_soft: Rgb::hex(0xdc_fce7),
     border: Rgb::hex(0xd6_d3_ce),
     border_strong: Rgb::hex(0xb9_b4_ac),
     danger: Rgb::hex(0xc0_39_2b),
