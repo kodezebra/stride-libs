@@ -59,36 +59,47 @@ impl Theme {
     }
 }
 
+/// Dark theme — Scandinavian FinTech.
+///
+/// Slate-obsidian shell, muted slate surfaces, electric-mint primary actions.
+/// Cool, calm, hyper-legible for low-light hours; the mint stays visually sharp
+/// without the optical intensity of saturated orange or blue.
 const DARK: Palette = Palette {
-    bg: Rgb::hex(0x14_16_1a),
-    surface: Rgb::hex(0x1b_1f_26),
-    surface_alt: Rgb::hex(0x23_28_33),
-    text: Rgb::hex(0xe8_ea_ed),
-    text_muted: Rgb::hex(0x9a_a3_b2),
-    accent: Rgb::hex(0x6d_9b_ff),
-    accent_text: Rgb::hex(0x0b_0e_13),
-    accent_soft: Rgb::hex(0x24_2f_45),
-    border: Rgb::hex(0x2c_33_41),
-    border_strong: Rgb::hex(0x6b_76_88),
-    danger: Rgb::hex(0xff_5c_5c),
-    success: Rgb::hex(0x3d_dc_84),
-    warning: Rgb::hex(0xf0_b4_29),
+    bg: Rgb::hex(0x0f_17_2a),
+    surface: Rgb::hex(0x1e_29_3b),
+    surface_alt: Rgb::hex(0x33_41_55),
+    text: Rgb::hex(0xf8_fa_fc),
+    text_muted: Rgb::hex(0x94_a3_b8),
+    accent: Rgb::hex(0x14_b8_a6),
+    accent_text: Rgb::hex(0x0f_17_2a),
+    accent_soft: Rgb::hex(0x16_4e_4b),
+    border: Rgb::hex(0x33_41_55),
+    border_strong: Rgb::hex(0x64_74_8b),
+    danger: Rgb::hex(0xef_44_44),
+    success: Rgb::hex(0x34_d3_99),
+    warning: Rgb::hex(0xf5_9e_0b),
 };
 
+/// Light theme — Artisanal Coffee & Boutique Retail.
+///
+/// Warm cashmere-cream canvas, deep warm-charcoal shell, terracotta primary.
+/// Organic and low-blue-light, easy on the eyes in bright retail, and nothing
+/// like corporate POS software. The default: a till under shop lighting next to
+/// a window, where a dark screen reads as a dead terminal to a customer.
 const LIGHT: Palette = Palette {
-    bg: Rgb::hex(0xf7_f8_fa),
+    bg: Rgb::hex(0xf5_f5_f4),
     surface: Rgb::hex(0xff_ff_ff),
-    surface_alt: Rgb::hex(0xee_f1_f5),
-    text: Rgb::hex(0x1b_1f_26),
-    text_muted: Rgb::hex(0x5d_66_75),
-    accent: Rgb::hex(0x25_63_eb),
+    surface_alt: Rgb::hex(0xe7_e5_e4),
+    text: Rgb::hex(0x1c_19_17),
+    text_muted: Rgb::hex(0x6e_66_5d),
+    accent: Rgb::hex(0xc2_41_0c),
     accent_text: Rgb::hex(0xff_ff_ff),
-    accent_soft: Rgb::hex(0xe9_ef_fc),
-    border: Rgb::hex(0xdf_e4_ec),
-    border_strong: Rgb::hex(0x7c_87_98),
-    danger: Rgb::hex(0xd9_2d_20),
-    success: Rgb::hex(0x12_80_5c),
-    warning: Rgb::hex(0xb4_53_09),
+    accent_soft: Rgb::hex(0xfd_ec_e6),
+    border: Rgb::hex(0xd6_d3_ce),
+    border_strong: Rgb::hex(0xb9_b4_ac),
+    danger: Rgb::hex(0xc0_39_2b),
+    success: Rgb::hex(0x84cc16),
+    warning: Rgb::hex(0xd9_77_06),
 };
 
 /// Apply a palette to an egui context.
