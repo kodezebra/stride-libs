@@ -24,6 +24,7 @@ storage = { path = "crates/storage" }
 config = { path = "crates/config" }
 app-boot = { path = "crates/app-boot" }
 money = { path = "crates/money" }
+lan-http = { path = "crates/lan-http" }
 
 # ---- third-party ---------------------------------------------------------
 # Versions are pinned to what is already cached in ~/.cargo/registry, so a
@@ -38,6 +39,11 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 directories = "6.0.0"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
+# The LAN listener behind phone scanning and till-to-till sync. `tiny_http` is
+# deliberately synchronous and tiny; `getrandom` fills the pairing code from the
+# OS, never from a userspace PRNG. Both are already in the offline registry.
+tiny_http = "0.12.0"
+getrandom = "0.3.4"
 # ISO 4217 currency metadata: codes, exponents, symbols. Exact pin: 0.7.x is a
 # data snapshot, and a minor release can add or retire a currency. It pulls
 # `iso_country` and `lazy_static`; both were fetched deliberately for `money`.
