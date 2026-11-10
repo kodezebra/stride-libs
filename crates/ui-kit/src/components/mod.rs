@@ -14,7 +14,7 @@
 //!   from the scale, add it to the scale first.
 
 use crate::theme;
-use crate::tokens::{RADII, Rgb, SPACING, TYPE};
+use crate::tokens::{BRANDS, RADII, Rgb, SPACING, TYPE};
 use egui::{
     Color32, CornerRadius, FontId, Rect, Response, RichText, Sense, Stroke, StrokeKind, Ui, Vec2,
     Widget,
@@ -140,6 +140,10 @@ pub fn search_field(ui: &mut Ui, text: &mut String, hint: &str) -> Response {
         // Inputs get the strong border: they must stay visible against the card
         // they sit on, which a hairline does not guarantee at 3:1.
         ui.visuals_mut().widgets.inactive.bg_stroke = Stroke::new(1.0_f32, palette.border_strong);
+        // egui draws the focused TextEdit frame with `selection.stroke`. Make
+        // that frame a real focus ring here rather than changing the global
+        // width, which would also thicken every text selection.
+        ui.visuals_mut().selection.stroke = Stroke::new(2.0_f32, palette.accent_ink());
         ui.add_sized(
             [width, 44.0],
             egui::TextEdit::singleline(text)
@@ -311,7 +315,7 @@ pub fn choice_card(
             Color32::from(palette.surface)
         };
         let border = if selected {
-            Stroke::new(2.0_f32, palette.accent)
+            Stroke::new(2.0_f32, palette.accent_ink())
         } else if response.hovered() {
             Stroke::new(1.0_f32, palette.border_strong)
         } else {
@@ -328,7 +332,7 @@ pub fn choice_card(
         );
 
         let color = if selected {
-            Color32::from(palette.accent)
+            Color32::from(palette.accent_ink())
         } else {
             Color32::from(palette.text)
         };
@@ -408,7 +412,7 @@ pub fn icon_button(ui: &mut Ui, icon: crate::icons::Icon, size: f32) -> Response
         );
 
         let color = if hovered {
-            Color32::from(palette.accent)
+            Color32::from(palette.accent_ink())
         } else {
             ui.visuals().text_color()
         };
@@ -470,7 +474,7 @@ fn step_button(ui: &mut Ui, icon: crate::icons::Icon) -> Response {
             Color32::from(palette.surface_alt)
         };
         let stroke = if hovered {
-            Stroke::new(1.0_f32, palette.accent)
+            Stroke::new(1.0_f32, palette.accent_ink())
         } else {
             Stroke::new(1.0_f32, palette.border)
         };
@@ -483,7 +487,7 @@ fn step_button(ui: &mut Ui, icon: crate::icons::Icon) -> Response {
         );
 
         let color = if hovered {
-            Color32::from(palette.accent)
+            Color32::from(palette.accent_ink())
         } else {
             ui.visuals().text_color()
         };
@@ -495,6 +499,55 @@ fn step_button(ui: &mut Ui, icon: crate::icons::Icon) -> Response {
     }
 
     response.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A row of one-click brand accents.
+///
+/// Returns `Some(None)` when the product accent is chosen, `Some(Some(accent))`
+/// when a brand is chosen, and `None` when the user did not click. The return
+/// value deliberately does not mutate a caller-owned colour: doing that would
+/// make the comparison after the call always equal and the settings dirty flag
+/// would never fire.
+pub fn brand_selector(ui: &mut Ui, selected: Option<Rgb>) -> Option<Option<Rgb>> {
+    let mut choice = None;
+    ui.horizontal_wrapped(|ui| {
+        ui.spacing_mut().item_spacing = Vec2::new(SPACING.sm, SPACING.sm);
+        if brand_swatch(ui, None, "Default", selected.is_none()).clicked() {
+            choice = Some(None);
+        }
+        for brand in BRANDS {
+            let is_selected = selected == Some(brand.accent);
+            if brand_swatch(ui, Some(brand.accent), brand.name, is_selected).clicked() {
+                choice = Some(Some(brand.accent));
+            }
+        }
+    });
+    choice
+}
+
+fn brand_swatch(ui: &mut Ui, accent: Option<Rgb>, label: &str, selected: bool) -> Response {
+    let palette = theme::current(ui.ctx());
+    let fill = accent.unwrap_or(palette.surface_alt);
+    let ink = accent.map(Rgb::best_ink).unwrap_or(palette.text);
+    let stroke = if selected {
+        Stroke::new(2.0_f32, palette.text)
+    } else {
+        Stroke::new(1.0_f32, palette.border_strong)
+    };
+
+    ui.add(
+        egui::Button::new(
+            RichText::new(label)
+                .size(TYPE.small)
+                .family(theme::semibold())
+                .color(ink),
+        )
+        .fill(fill)
+        .stroke(stroke)
+        .corner_radius(CornerRadius::same(RADII.sm as u8))
+        .min_size(Vec2::new(88.0, 38.0)),
+    )
+    .on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Blend `b` into `a`. Used to tint a palette role against the surface it sits

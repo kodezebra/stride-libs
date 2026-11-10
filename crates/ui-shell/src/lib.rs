@@ -20,7 +20,7 @@ use std::error::Error;
 use std::path::PathBuf;
 
 use ui_kit::theme::Theme;
-use ui_kit::tokens::Palette;
+use ui_kit::tokens::{Palette, Rgb};
 
 /// Re-exported so apps never declare their own egui dependency and can never
 /// drift onto a second, incompatible egui version.
@@ -67,6 +67,8 @@ pub struct Shell<S> {
     light_palette: Palette,
     /// The product's own palette for the dark side of the switch.
     dark_palette: Palette,
+    /// An optional brand accent applied over whichever palette is installed.
+    accent: Option<Rgb>,
     screens: Vec<Box<dyn Screen<S>>>,
     actions: Vec<HeaderAction<S>>,
     status: Option<StatusText<S>>,
@@ -81,6 +83,7 @@ impl<S: 'static> Shell<S> {
             theme: Theme::default(),
             light_palette: Palette::default(),
             dark_palette: Palette::default(),
+            accent: None,
             screens: Vec::new(),
             actions: Vec::new(),
             status: None,
@@ -100,6 +103,17 @@ impl<S: 'static> Shell<S> {
     pub fn palettes(mut self, light: Palette, dark: Palette) -> Self {
         self.light_palette = light;
         self.dark_palette = dark;
+        self
+    }
+
+    /// Apply one brand accent over the product palettes. The canvas, text, and
+    /// semantic roles stay the product's; only the accent family is derived.
+    ///
+    /// The shell installs visuals once, so a product that lets the user change
+    /// the accent at runtime should use its own shell loop (as the POS does)
+    /// rather than expecting this builder to repaint live.
+    pub fn accent(mut self, accent: Rgb) -> Self {
+        self.accent = Some(accent);
         self
     }
 
@@ -173,7 +187,11 @@ impl<S: 'static> Shell<S> {
                         Theme::Light => (&app.shell.light_palette, false),
                         Theme::Dark => (&app.shell.dark_palette, true),
                     };
-                    ui_kit::theme::install(&cc.egui_ctx, palette, dark);
+                    let palette = app
+                        .shell
+                        .accent
+                        .map_or(*palette, |accent| palette.with_accent(accent, dark));
+                    ui_kit::theme::install(&cc.egui_ctx, &palette, dark);
                     Ok(Box::new(app))
                 },
             ),
