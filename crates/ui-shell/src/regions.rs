@@ -544,12 +544,11 @@ where
     S: 'static,
     F: FnMut(&mut egui::Ui, &mut S) + 'static,
 {
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
+    let options = crate::native_options(
+        egui::ViewportBuilder::default()
             .with_inner_size(window.inner)
             .with_min_inner_size(window.min),
-        ..Default::default()
-    };
+    );
 
     let app = LooseApp { state, draw };
 

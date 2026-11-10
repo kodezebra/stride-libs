@@ -26,6 +26,29 @@ use ui_kit::tokens::{Palette, Rgb};
 /// drift onto a second, incompatible egui version.
 pub use egui;
 
+/// The rendering backend each platform gets.
+///
+/// Linux keeps glow: Mesa's llvmpipe provides OpenGL 2.0 even in a VM with no
+/// GPU, and no Vulkan driver is required. Windows has no OpenGL in the OS — a
+/// PC without a vendor driver offers only Microsoft's software OpenGL 1.1, and
+/// glow refuses to start with `egui_glow requires opengl 2.0+`. wgpu draws with
+/// Direct3D 12, whose software adapter (WARP) ships with Windows 10 and later,
+/// so the window still opens on a machine with no graphics driver at all.
+#[cfg(windows)]
+const RENDERER: eframe::Renderer = eframe::Renderer::Wgpu;
+#[cfg(not(windows))]
+const RENDERER: eframe::Renderer = eframe::Renderer::Glow;
+
+/// Window options both entry points share, so the backend is decided here once
+/// instead of being repeated (and eventually diverging) in each runner.
+fn native_options(viewport: egui::ViewportBuilder) -> eframe::NativeOptions {
+    eframe::NativeOptions {
+        viewport,
+        renderer: RENDERER,
+        ..Default::default()
+    }
+}
+
 /// One paginated area of a product. Implemented by the app, never by a crate.
 pub trait Screen<S> {
     /// Sidebar label and the identifier used in logs.
@@ -170,12 +193,11 @@ impl<S: 'static> Shell<S> {
             app.shell.nav.active = 0;
         }
 
-        let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default()
+        let options = crate::native_options(
+            egui::ViewportBuilder::default()
                 .with_inner_size([1180.0, 760.0])
                 .with_min_inner_size([880.0, 560.0]),
-            ..Default::default()
-        };
+        );
 
         let title = app.shell.title.clone();
         eframe::run_native(
