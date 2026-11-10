@@ -1,0 +1,12 @@
+[package]
+name = "lan-http"
+version.workspace = true
+edition.workspace = true
+description = "Minimal LAN HTTP/1.1 transport: one-request client, tiny_http listener, pairing codes"
+
+[dependencies]
+getrandom.workspace = true
+tiny_http.workspace = true
+
+[lints]
+workspace = true
