@@ -12,5 +12,15 @@ eframe.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
+# Windows has no OpenGL 2.0 in the OS: on a PC with no vendor graphics driver
+# the only OpenGL is Microsoft's software 1.1, and `egui_glow` refuses to start.
+# wgpu draws through Direct3D 12 instead, and Windows ships a software D3D12
+# adapter (WARP), so the till opens even with no GPU driver installed. Linux
+# keeps glow: Mesa's llvmpipe covers VMs there, and wgpu would need a Vulkan
+# driver that the tills are not guaranteed to have. Declared per target so a
+# Linux build never compiles wgpu.
+[target.'cfg(windows)'.dependencies]
+eframe = { workspace = true, features = ["wgpu"] }
+
 [lints]
 workspace = true

@@ -264,7 +264,7 @@ present in `~/.cargo/registry` on this machine, so a clean build fetches nothing
 
 | Crate | Pinned | Notes |
 |---|---|---|
-| `eframe` / `egui` | `0.36.2` | `default-features = false`: `default_fonts`, `glow`, `links`, `wayland`, `x11`. 0.36 defaults to wgpu, and taking the default would swap the renderer silently |
+| `eframe` / `egui` | `0.36.2` | `default-features = false`: `default_fonts`, `glow`, `links`, `wayland`, `x11`. 0.36 defaults to wgpu, and taking the default would swap the renderer silently. `ui-shell` adds `wgpu` for `cfg(windows)` only (see "Rendering per platform" below) |
 | `egui_extras` | `0.36.2` | `svg` only — needed to rasterise icon paths |
 | `egui-lucide` | `0.1.0` | its `egui` requirement is `>=0.36,<0.37`, so it is the pin that holds the series |
 | `rusqlite` | `0.32.1` | `bundled` — compiles SQLite from source in the crate, no download |
@@ -278,13 +278,30 @@ present in `~/.cargo/registry` on this machine, so a clean build fetches nothing
 `rust-version` is `1.95` (edition 2024). `rust-toolchain.toml` tracks `stable`
 so the file documents intent without forcing a toolchain download.
 
-Four packages were fetched **deliberately**, because they were not in the local
-registry: `accesskit 0.24.1` and `resvg 0.45.1` for the 0.36 bump, and
-`iso_currency 0.7.1` + `iso_country 0.1.4` for `money`. Anything further must be fetched the same way —
-once, on purpose, with `Cargo.lock` committed and this list updated. eframe's
-own `accesskit` feature stays **off**: it would need `accesskit_winit`, which
-has not been fetched. Screen-reader support is a decision to take on its own,
-not a side effect.
+Nine packages were fetched **deliberately**, because they were not in the local
+registry: `accesskit 0.24.1` and `resvg 0.45.1` for the 0.36 bump,
+`iso_currency 0.7.1` + `iso_country 0.1.4` for `money`, and for the Windows
+renderer below `pollster 1.0.1`, `presser 0.3.1`, `gpu-allocator 0.28.0`,
+`allocator-api2 0.2.21`, `spirv 0.4.0`. Anything further must be fetched the
+same way — once, on purpose, with `Cargo.lock` committed and this list updated.
+eframe's own `accesskit` feature stays **off**: it would need `accesskit_winit`,
+which has not been fetched. Screen-reader support is a decision to take on its
+own, not a side effect.
+
+### Rendering per platform
+
+`ui-shell` picks the backend once, in `native_options()`:
+
+| Target | Renderer | Why |
+|---|---|---|
+| Linux | glow (OpenGL) | Mesa's llvmpipe gives OpenGL 2.0 even in a VM, so a till needs no Vulkan driver |
+| Windows | wgpu (Direct3D 12) | Windows ships no OpenGL 2.0: on a PC with no vendor driver the only GL is Microsoft's software 1.1, and `egui_glow` exits with `requires opengl 2.0+`. wgpu draws through D3D12, whose software adapter (WARP) ships with Windows 10+, so the till opens regardless |
+
+The `wgpu` feature is declared under `[target.'cfg(windows)'.dependencies]` in
+`ui-shell`, so a Linux build never compiles it. Both the `Shell::run` and
+`run_app` entry points go through `native_options()`; a product must never build
+`eframe::NativeOptions` itself, or its windows would silently get the wrong
+backend.
 
 Rules:
 
