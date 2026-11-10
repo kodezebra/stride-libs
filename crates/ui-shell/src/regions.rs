@@ -89,6 +89,7 @@ pub fn rail(ui: &mut egui::Ui, items: &[RailItem], selected: usize) -> Option<us
 
 fn rail_entry(ui: &mut egui::Ui, item: &RailItem, selected: bool) -> bool {
     let palette = ui_kit::theme::current(ui.ctx());
+    let accent_ink = palette.accent_ink();
     let (full, response) = ui.allocate_exact_size(
         egui::vec2(ui.available_width(), size::RAIL_ROW),
         egui::Sense::click(),
@@ -112,11 +113,11 @@ fn rail_entry(ui: &mut egui::Ui, item: &RailItem, selected: bool) -> bool {
             // The 3 px accent edge is what makes the active module readable from
             // across the counter, where the icon alone is too small to judge.
             let edge = egui::Rect::from_min_size(rect.left_top(), egui::vec2(3.0, rect.height()));
-            painter.rect_filled(edge, egui::CornerRadius::same(2), palette.accent);
+            painter.rect_filled(edge, egui::CornerRadius::same(2), accent_ink);
         }
 
         let color = if selected {
-            egui::Color32::from(palette.accent)
+            egui::Color32::from(accent_ink)
         } else {
             ui.visuals().text_color()
         };
@@ -232,6 +233,7 @@ pub fn status_end(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
 /// definition, so the shell and a product's own sidebar agree.
 pub fn nav_item(ui: &mut egui::Ui, selected: bool, text: &str) -> egui::Response {
     let palette = ui_kit::theme::current(ui.ctx());
+    let accent_ink = palette.accent_ink();
     let (full, response) = ui.allocate_exact_size(
         egui::vec2(ui.available_width(), size::NAV_ROW),
         egui::Sense::click(),
@@ -247,7 +249,7 @@ pub fn nav_item(ui: &mut egui::Ui, selected: bool, text: &str) -> egui::Response
             egui::Color32::TRANSPARENT
         };
         let color = if selected {
-            egui::Color32::from(palette.accent)
+            egui::Color32::from(accent_ink)
         } else {
             ui.visuals().text_color()
         };
@@ -471,7 +473,7 @@ fn palette_row<S>(ui: &mut egui::Ui, command: &Command<S>, selected: bool) -> bo
             &command.label,
             egui::FontId::new(TYPE.body, egui::FontFamily::Proportional),
             if selected {
-                egui::Color32::from(palette.accent)
+                egui::Color32::from(palette.accent_ink())
             } else {
                 egui::Color32::from(palette.text)
             },

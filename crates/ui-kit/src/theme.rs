@@ -79,6 +79,21 @@ pub fn install(ctx: &egui::Context, palette: &Palette, dark: bool) {
     ctx.data_mut(|data| data.insert_temp(palette_id(), *palette));
 }
 
+/// Install a product palette with one brand accent, keeping the palette's own
+/// canvas and semantic colours.
+///
+/// This is the runtime counterpart to [`Palette::with_accent`]; an app that
+/// stores a brand choice can call this without rebuilding the whole palette.
+#[cfg(feature = "widgets")]
+pub fn install_accent(
+    ctx: &egui::Context,
+    palette: &Palette,
+    accent: crate::tokens::Rgb,
+    dark: bool,
+) {
+    install(ctx, &palette.with_accent(accent, dark), dark);
+}
+
 /// The palette the current context was installed with.
 #[cfg(feature = "widgets")]
 pub fn current(ctx: &egui::Context) -> Palette {
@@ -183,15 +198,17 @@ fn install_style(ctx: &egui::Context, palette: &Palette, dark: bool) {
     visuals.code_bg_color = palette.surface_alt.into();
     visuals.override_text_color = Some(palette.text.into());
     visuals.weak_text_color = Some(palette.text_muted.into());
-    visuals.hyperlink_color = palette.accent.into();
+    visuals.hyperlink_color = palette.accent_ink().into();
     visuals.warn_fg_color = palette.warning.into();
     visuals.error_fg_color = palette.danger.into();
 
     // Text selection and selected buttons share these two roles. Keeping the
     // wash pale and the text accent means a selected row reads as "active"
-    // without turning into a solid block of brand colour.
+    // without turning into a solid block of brand colour. The ink is derived
+    // from contrast, because the raw accent is not always legible as text.
+    let accent_ink = palette.accent_ink();
     visuals.selection.bg_fill = palette.accent_soft.into();
-    visuals.selection.stroke = egui::Stroke::new(1.0_f32, palette.accent);
+    visuals.selection.stroke = egui::Stroke::new(1.0_f32, accent_ink);
 
     visuals.window_corner_radius = egui::CornerRadius::same(crate::tokens::RADII.lg as u8);
     visuals.menu_corner_radius = egui::CornerRadius::same(crate::tokens::RADII.md as u8);
@@ -216,13 +233,13 @@ fn install_style(ctx: &egui::Context, palette: &Palette, dark: bool) {
 
     widgets.hovered.bg_fill = palette.surface_alt.into();
     widgets.hovered.weak_bg_fill = palette.accent_soft.into();
-    widgets.hovered.bg_stroke = egui::Stroke::new(1.0_f32, palette.accent);
+    widgets.hovered.bg_stroke = egui::Stroke::new(1.0_f32, accent_ink);
     widgets.hovered.fg_stroke = text;
     widgets.hovered.corner_radius = corner;
 
     widgets.active.bg_fill = palette.accent_soft.into();
     widgets.active.weak_bg_fill = palette.accent_soft.into();
-    widgets.active.bg_stroke = egui::Stroke::new(1.0_f32, palette.accent);
+    widgets.active.bg_stroke = egui::Stroke::new(1.0_f32, accent_ink);
     widgets.active.fg_stroke = text;
     widgets.active.corner_radius = corner;
 
@@ -234,7 +251,10 @@ fn install_style(ctx: &egui::Context, palette: &Palette, dark: bool) {
                 egui::TextStyle::Small,
                 egui::FontId::proportional(crate::tokens::TYPE.small),
             ),
-            (egui::TextStyle::Body, egui::FontId::proportional(crate::tokens::TYPE.body)),
+            (
+                egui::TextStyle::Body,
+                egui::FontId::proportional(crate::tokens::TYPE.body),
+            ),
             (
                 egui::TextStyle::Button,
                 egui::FontId::proportional(crate::tokens::TYPE.button),
