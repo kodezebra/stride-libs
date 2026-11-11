@@ -204,11 +204,21 @@ pub fn status(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
 
 /// One status segment: an icon and a short label.
 pub fn status_item(ui: &mut egui::Ui, icon: Icon, text: &str, color: egui::Color32) {
+    // The tail of the bar runs right-to-left, which would otherwise paint the
+    // label before the icon. Add them in paint order and use the gap the
+    // bar's width estimate assumes.
+    let right_to_left = ui.layout().main_dir() == egui::Direction::RightToLeft;
     ui.horizontal_centered(|ui| {
+        ui.spacing_mut().item_spacing.x = SPACING.sm;
+        if right_to_left {
+            ui.label(egui::RichText::new(text).size(TYPE.status).color(color));
+        }
         let (rect, _) =
             ui.allocate_exact_size(egui::Vec2::splat(size::STATUS_ICON), egui::Sense::hover());
         icon.image(size::STATUS_ICON, color).paint_at(ui, rect);
-        ui.label(egui::RichText::new(text).size(TYPE.status).color(color));
+        if !right_to_left {
+            ui.label(egui::RichText::new(text).size(TYPE.status).color(color));
+        }
     });
 }
 
