@@ -281,12 +281,15 @@ pub fn nav_item(ui: &mut egui::Ui, selected: bool, text: &str) -> egui::Response
 /// The central panel: everything left over after the pinned edges.
 ///
 /// The inner margin is the difference between a page that looks designed and
-/// content glued to the window frame.
+/// content glued to the window frame. The horizontal inset is deliberately the
+/// widest step on the scale: right-aligned header actions (`New product`,
+/// `Export CSV`) otherwise land against the scrollbar and read as clipped, and
+/// long card grids lose their outer gutter.
 pub fn workspace(ui: &mut egui::Ui, add: impl FnOnce(&mut egui::Ui)) {
     egui::CentralPanel::default()
         .frame(
             egui::Frame::central_panel(ui.style())
-                .inner_margin(egui::Margin::symmetric(SPACING.lg as i8, SPACING.md as i8)),
+                .inner_margin(egui::Margin::symmetric(SPACING.xl as i8, SPACING.lg as i8)),
         )
         .show(ui, add);
 }
