@@ -2,6 +2,18 @@
 
 Shared plumbing for the Stride products. No product domain, ever.
 
+## Git workflow
+
+Work is local. Branches are local; `origin` receives only `main`.
+
+- Create a local branch, commit, verify, merge it into `main` locally, then
+  `git push origin main`.
+- Never push a feature, fix, chore, docs, or release branch. Never open a PR from one.
+- `main` still moves only by merge, never by a direct commit.
+- Tags still come from `main`, after green CI.
+
+The detailed steps below follow this rule.
+
 ## Repos
 
 Three repos. Direction is one-way: `stride-pos`/`stride-school` → `stride-libs`.
@@ -45,7 +57,8 @@ So a libs change is always **two commits in two repos**.
 
 ### Step 1 — land the change here
 
-`main` only moves by merge. Work on a branch and open a PR; merge once CI is green.
+`main` only moves by local merge. Work on a local branch, verify locally, merge it
+into `main`, then push `main`. The branch never leaves the machine.
 
 ```sh
 git switch -c ui-kit/<what-changed>
@@ -53,9 +66,13 @@ cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 cargo test --locked
 git add -A && git commit -m "ui-kit: <what changed>"
-git push -u origin ui-kit/<what-changed>
-gh pr create --fill
+git switch main
+git merge --no-ff ui-kit/<what-changed>
+git push origin main
 ```
+
+No PR and no branch push. If CI runs, it judges `main` after the push; if it is red,
+fix forward on another local branch.
 
 Then, on an up-to-date `main`:
 
@@ -78,10 +95,12 @@ grep -c "$SHA" Cargo.toml     # 6 in pos, 5 in school until it uses `money`
 cargo check
 git add Cargo.toml Cargo.lock
 git commit -m "chore(deps): stride-libs ${SHA:0:8}"
-git push -u origin chore/libs-${SHA:0:8}
+git switch main
+git merge --no-ff chore/libs-${SHA:0:8}
+git push origin main
 ```
 
-Merge the branch the same way: PR, green CI, then merge.
+The merge happens locally; only `main` is pushed.
 
 `Cargo.lock` goes in the same commit: CI builds `--locked`, and the lock is where the
 resolved SHA is recorded.
@@ -96,8 +115,9 @@ resolved SHA is recorded.
 
 ### Rules
 
-- Never commit directly to `main` in any of the three repos. A change lands on a branch and
-  merges; `main` is what the `rev` bookmarks point at, so it must only move by merge.
+- Never commit directly to `main` in any of the three repos. A change lands on a local
+  branch and merges locally; `main` is what the `rev` bookmarks point at, so it must only
+  move by merge. Only `main` is pushed to `origin`.
 - Never write a `rev` that is not a pushed commit on `stride-libs` `main`.
 - Never use `branch =` or `tag =` for these deps. Never `cargo update` them.
 - Never force-push or rebase `stride-libs` `main`. A shipped tag must still resolve its SHA.
