@@ -435,29 +435,38 @@ pub enum Step {
     Down,
 }
 
-/// A quantity stepper: minus, count, plus. Returns the change rather than
-/// mutating anything, so the caller owns the domain rule (a line at zero is
-/// removed, not shown as zero).
+/// A quantity stepper: minus, count, plus.
+///
+/// Returns the change and the count's response rather than mutating anything,
+/// so the caller owns the domain rule (a line at zero is removed, not shown as
+/// zero).
+///
+/// The count is a button. A cashier selling twelve of something should not have
+/// to tap plus eleven times, and the number is the thing they would tap to say
+/// so — so it is framed like its neighbours instead of being a label that
+/// happens to be clickable.
 #[cfg(feature = "icons")]
-pub fn stepper(ui: &mut Ui, qty: i64) -> Step {
-    let mut step = Step::None;
+pub fn stepper(ui: &mut Ui, qty: i64) -> (Step, Response) {
+    let palette = theme::current(ui.ctx());
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = SPACING.xs;
+        let mut step = Step::None;
         if step_button(ui, crate::icons::Icon::MINUS).clicked() {
             step = Step::Down;
         }
-        ui.allocate_ui_with_layout(
-            Vec2::new(36.0, 30.0),
-            egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
-            |ui| {
-                ui.label(numeric(qty.to_string()).size(TYPE.body));
-            },
+        let count = ui.add(
+            egui::Button::new(numeric(qty.to_string()).size(TYPE.body))
+                .min_size(Vec2::new(36.0, 30.0))
+                .fill(Color32::from(palette.surface_alt))
+                .stroke(Stroke::new(1.0_f32, palette.border))
+                .corner_radius(CornerRadius::same(RADII.sm as u8)),
         );
         if step_button(ui, crate::icons::Icon::PLUS).clicked() {
             step = Step::Up;
         }
-    });
-    step
+        (step, count)
+    })
+    .inner
 }
 
 /// A stepper key: visible at rest, because a cashier should not have to hover a
