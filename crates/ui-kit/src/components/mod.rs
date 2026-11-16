@@ -200,17 +200,36 @@ pub fn semibold(text: impl Into<String>) -> RichText {
 
 /// Small pill label — "Draft", "Paid", "Synced". Colour comes from the palette
 /// role the caller picked (`success`, `danger`, `text_muted`, …).
+///
+/// The pill hugs its text and pins its own height. Inside a right-to-left row
+/// (the usual case in a table) a bare `Frame` stretches to the row's full
+/// height and reads as a button; fixing the height to the text row plus its
+/// padding keeps a badge a badge in dense lists without the caller having to
+/// wrap it in a scope.
 pub fn badge(ui: &mut Ui, text: &str, color: Rgb) {
     let palette = theme::current(ui.ctx());
     let foreground = Color32::from(color);
     let background = mix(palette.surface.into(), foreground, 0.14);
-    egui::Frame::NONE
-        .fill(background)
-        .corner_radius(CornerRadius::same(u8::MAX))
-        .inner_margin(egui::Margin::symmetric(8, 2))
-        .show(ui, |ui| {
-            ui.label(RichText::new(text).size(TYPE.small).color(foreground));
-        });
+
+    const PAD_X: i8 = 6;
+    const PAD_Y: i8 = 2;
+    let row = ui.ctx().fonts_mut(|fonts| {
+        fonts.row_height(&FontId::new(TYPE.small, egui::FontFamily::Proportional))
+    });
+    // One pixel of slack so a fractional row height cannot clip the glyphs.
+    let height = row + f32::from(PAD_Y) * 2.0 + 1.0;
+
+    ui.scope(|ui| {
+        ui.set_height(height);
+        egui::Frame::NONE
+            .fill(background)
+            .corner_radius(CornerRadius::same(u8::MAX))
+            .inner_margin(egui::Margin::symmetric(PAD_X, PAD_Y))
+            .show(ui, |ui| {
+                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+                ui.label(RichText::new(text).size(TYPE.small).color(foreground));
+            });
+    });
 }
 
 /// Empty-state block: what is missing, and what to do about it.
