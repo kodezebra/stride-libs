@@ -133,6 +133,10 @@ pub fn field_label(ui: &mut Ui, text: &str) {
 }
 
 /// A full-width search or scan field, tall enough to hit without looking.
+///
+/// The field owns its row on purpose. When it shares a row with the page's
+/// actions, use [`search_field_sized`]: this one always claims every pixel the
+/// parent has left.
 pub fn search_field(ui: &mut Ui, text: &mut String, hint: &str) -> Response {
     let palette = theme::current(ui.ctx());
     let width = ui.available_width();
@@ -152,6 +156,101 @@ pub fn search_field(ui: &mut Ui, text: &mut String, hint: &str) -> Response {
         )
     })
     .inner
+}
+
+/// A search field at an explicit width, for a bar that also holds actions.
+///
+/// [`search_field`] takes the whole row because it is the page's only field.
+/// This one shares the row, so the caller decides the width and the field keeps
+/// its own gutters: a magnifier on the left and, once there is something to
+/// clear, a clear button on the right. Both are painted inside the field's own
+/// frame rather than placed beside it — a button outside would move the border
+/// and make one control read as two.
+///
+/// Clicking the clear button empties the text and keeps the focus, so a cashier
+/// can scan again without reaching for the mouse. An empty field does not
+/// reserve the trailing gutter, so the hint is not cut short for a button that
+/// has nothing to do.
+#[cfg(feature = "icons")]
+pub fn search_field_sized(
+    ui: &mut Ui,
+    text: &mut String,
+    hint: &str,
+    width: f32,
+    height: f32,
+) -> Response {
+    let palette = theme::current(ui.ctx());
+    let clearable = !text.is_empty();
+    let glyph = 16.0;
+    // Breathing room, the glyph, and the gap before the text begins.
+    let gutter = (10.0 + glyph + 4.0) as i8;
+    let left = gutter;
+    let right = if clearable { gutter } else { SPACING.md as i8 };
+    let vertical = ((height - 20.0) * 0.5).clamp(2.0, 12.0) as i8;
+
+    let response = ui
+        .scope(|ui| {
+            // Same rules as `search_field`: the input keeps the strong border,
+            // and focus is a ring rather than a wider text-selection stroke.
+            ui.visuals_mut().widgets.inactive.bg_stroke =
+                Stroke::new(1.0_f32, palette.border_strong);
+            ui.visuals_mut().selection.stroke = Stroke::new(2.0_f32, palette.accent_ink());
+            ui.add_sized(
+                [width, height],
+                egui::TextEdit::singleline(text)
+                    .hint_text(hint)
+                    .margin(egui::Margin {
+                        left,
+                        right,
+                        top: vertical,
+                        bottom: vertical,
+                    }),
+            )
+        })
+        .inner;
+
+    let rect = response.rect;
+    let center_y = rect.center().y;
+    crate::icons::Icon::SEARCH
+        .image(glyph, Color32::from(palette.text_muted))
+        .paint_at(
+            ui,
+            Rect::from_center_size(
+                egui::pos2(rect.left() + 10.0 + glyph / 2.0, center_y),
+                Vec2::splat(glyph),
+            ),
+        );
+
+    if clearable {
+        // Registered after the text edit, so the click lands on the glyph
+        // instead of putting the caret under it.
+        let target = Rect::from_center_size(
+            egui::pos2(rect.right() - 10.0 - glyph / 2.0, center_y),
+            Vec2::splat(glyph + 8.0),
+        );
+        let clear = ui
+            .interact(target, response.id.with("clear"), Sense::click())
+            .on_hover_cursor(egui::CursorIcon::PointingHand)
+            .on_hover_text("Clear search");
+        let color = if clear.hovered() {
+            palette.text
+        } else {
+            palette.text_muted
+        };
+        let mark = glyph - 2.0;
+        crate::icons::Icon::CLOSE
+            .image(mark, Color32::from(color))
+            .paint_at(
+                ui,
+                Rect::from_center_size(target.center(), Vec2::splat(mark)),
+            );
+        if clear.clicked() {
+            text.clear();
+            response.request_focus();
+        }
+    }
+
+    response
 }
 
 /// A small muted line: secondary information under a title or a table.
