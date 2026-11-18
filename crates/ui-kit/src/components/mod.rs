@@ -574,7 +574,7 @@ pub fn stepper(ui: &mut Ui, qty: i64) -> (Step, Response) {
         }
         let count = ui.add(
             egui::Button::new(numeric(qty.to_string()).size(TYPE.body))
-                .min_size(Vec2::new(36.0, 30.0))
+                .min_size(Vec2::splat(44.0))
                 .fill(Color32::from(palette.surface_alt))
                 .stroke(Stroke::new(1.0_f32, palette.border))
                 .corner_radius(CornerRadius::same(RADII.sm as u8)),
@@ -588,10 +588,11 @@ pub fn stepper(ui: &mut Ui, qty: i64) -> (Step, Response) {
 }
 
 /// A stepper key: visible at rest, because a cashier should not have to hover a
-/// row to discover that the quantity is editable.
+/// row to discover that the quantity is editable. The key is a full touch
+/// target (44 points) even though the glyph inside it is small.
 fn step_button(ui: &mut Ui, icon: crate::icons::Icon) -> Response {
     let palette = theme::current(ui.ctx());
-    let (rect, response) = ui.allocate_exact_size(Vec2::splat(30.0), Sense::click());
+    let (rect, response) = ui.allocate_exact_size(Vec2::splat(44.0), Sense::click());
 
     if ui.is_rect_visible(rect) {
         let hovered = response.hovered();
@@ -618,7 +619,7 @@ fn step_button(ui: &mut Ui, icon: crate::icons::Icon) -> Response {
         } else {
             ui.visuals().text_color()
         };
-        let glyph = 14.0;
+        let glyph = 18.0;
         icon.image(glyph, color).paint_at(
             ui,
             Rect::from_center_size(rect.center(), Vec2::splat(glyph)),

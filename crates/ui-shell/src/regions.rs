@@ -250,6 +250,21 @@ pub fn nav_item(ui: &mut egui::Ui, selected: bool, text: &str) -> egui::Response
     );
     let rect = full.shrink2(egui::vec2(2.0, 1.0));
 
+    // The row is one line. A long category or range must lose its tail, not
+    // wrap into a second row and change the sidebar's rhythm; the tooltip
+    // carries the whole label when there is one.
+    let max_text = (rect.width() - 2.0 * SPACING.md).max(0.0);
+    let full_width = ui
+        .painter()
+        .layout_no_wrap(
+            text.to_owned(),
+            egui::FontId::proportional(TYPE.body),
+            ui.visuals().text_color(),
+        )
+        .size()
+        .x;
+    let truncated = full_width > max_text;
+
     if ui.is_rect_visible(full) {
         let fill = if selected {
             egui::Color32::from(palette.accent_soft)
@@ -266,11 +281,13 @@ pub fn nav_item(ui: &mut egui::Ui, selected: bool, text: &str) -> egui::Response
 
         let painter = ui.painter();
         painter.rect_filled(rect, egui::CornerRadius::same(RADII.sm as u8), fill);
-        let galley = painter.layout_no_wrap(
-            text.to_owned(),
-            egui::FontId::proportional(TYPE.body),
-            color,
-        );
+        let galley = egui::WidgetText::from(egui::RichText::new(text).size(TYPE.body).color(color))
+            .into_galley(
+                ui,
+                Some(egui::TextWrapMode::Truncate),
+                max_text,
+                egui::TextStyle::Body,
+            );
         painter.galley(
             egui::pos2(
                 rect.min.x + SPACING.md,
@@ -281,7 +298,12 @@ pub fn nav_item(ui: &mut egui::Ui, selected: bool, text: &str) -> egui::Response
         );
     }
 
-    response.on_hover_cursor(egui::CursorIcon::PointingHand)
+    let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
+    if truncated {
+        response.on_hover_text(text)
+    } else {
+        response
+    }
 }
 
 // ---------------------------------------------------------------------------
